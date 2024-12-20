@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class LibraryManagerTest {
+class LibraryManagerTest {
 
     @Mock
     private UserService userService;
@@ -89,16 +89,28 @@ public class LibraryManagerTest {
     }
 
     @Test
-    void returnBookWithNotUser(){
+    void returnBookAnotherUser(){
+        when(userService.isUserActive("user1")).thenReturn(true);
         libraryManager.borrowBook("book1", "user1");
 
         boolean resultReturnBook = libraryManager.returnBook("book1", "user5");
 
         assertFalse(resultReturnBook);
-        assertEquals(30, libraryManager.getAvailableCopies("book1"));
+        assertEquals(29, libraryManager.getAvailableCopies("book1"));
         verify(notificationService, never()).notifyUser("user5", "You have returned the book: book1");
     }
 
+    @Test
+    void returnBookWhichWasNotTaken(){
+        when(userService.isUserActive("user1")).thenReturn(true);
+        libraryManager.borrowBook("book2", "user1");
+
+        boolean resultReturnBook = libraryManager.returnBook("book1", "user1");
+
+        assertFalse(resultReturnBook);
+        assertEquals(30, libraryManager.getAvailableCopies("book1"));
+        verify(notificationService, never()).notifyUser("user1", "You have returned the book: book1");
+    }
 
     @Test
     void calculateDynamicLateFeeDefaultBook(){
@@ -122,6 +134,12 @@ public class LibraryManagerTest {
     void calculateDynamicLateFeeIsBestsellerAndIsPremiumMember(){
         double result = libraryManager.calculateDynamicLateFee(5, true, true);
         assertEquals(3.0, result);
+    }
+
+    @Test
+    void calculateDynamicLateFeeThrowExceptioNullDays(){
+        double result = libraryManager.calculateDynamicLateFee(0, false, false);
+        assertEquals(0, result);
     }
 
     @Test
